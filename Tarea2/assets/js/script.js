@@ -1,197 +1,335 @@
-const form = document.getElementById("form");
-const cerrar = document.getElementById("cerrar");
-const titulo = document.getElementById("tituloform");
-const formulario = document.getElementById("formulario");
+const getModal = () => document.getElementById("form");
+const getTitulo = () => document.getElementById("tituloform");
+const getContenedor = () => document.getElementById("formulario");
 
-function abrirform(tipo, nitEditar = null){
+// Leer clientes desde PHP
+function obtenerClientesJS() {
+    const data = document.getElementById("datos-clientes-json");
+    return data ? JSON.parse(data.textContent) : [];
+}
 
-    form.style.display = "flex";
+function abrirform(tipo, valor = null) {
 
-    if(tipo === "agregar"){
+    const modal = getModal();
+    const titulo = getTitulo();
+    const contenedor = getContenedor();
+
+    modal.style.display = "flex";
+    contenedor.innerHTML = "";
+
+    if (tipo === "agregar") {
+
         titulo.innerText = "Agregar Cliente";
-        formulario.innerHTML = `
+
+        contenedor.innerHTML = `
             <input id="nit" placeholder="Nit">
-            <input id="first_name" placeholder="First Name">
-            <input id="last_name" placeholder="Last Name">
+            <input id="first_name" placeholder="Nombre">
+            <input id="last_name" placeholder="Apellido">
             <input id="email" placeholder="Email">
             <input id="celular" placeholder="Celular">
-            <button type="button" onclick="guardarCliente()">Guardar</button>
+
+            <button class="btn-confirmar-modal" onclick="guardarCliente()">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Cliente
+            </button>
         `;
     }
 
-    if(tipo === "editar"){
+    else if (tipo === "editar") {
+
         titulo.innerText = "Editar Cliente";
-        formulario.innerHTML = `
-            <input id="nit" placeholder="Nit" readonly>
-            <input id="first_name" placeholder="First Name">
-            <input id="last_name" placeholder="Last Name">
+
+        contenedor.innerHTML = `
+            <input id="nit" value="${valor}" readonly class="input-readonly">
+            <input id="first_name" placeholder="Nombre">
+            <input id="last_name" placeholder="Apellido">
             <input id="email" placeholder="Email">
             <input id="celular" placeholder="Celular">
-            <button type="button" onclick="actualizarCliente()">Actualizar</button>
-        `;
 
-        document.getElementById("nit").value = nitEditar;
+            <button class="btn-actualizar-modal" onclick="actualizarCliente()">
+                <i class="fa-solid fa-rotate"></i> Actualizar Datos
+            </button>
+        `;
     }
 
-    if(tipo === "buscar"){
+    else if (tipo === "agregarPedido") {
+
+        titulo.innerText = "Nuevo Pedido";
+
+        const clientes = obtenerClientesJS();
+
+        const opciones = clientes.map(c =>
+            `<option value="${c.nit}">${c.nit} - ${c.first_name} ${c.last_name}</option>`
+        ).join("");
+
+        contenedor.innerHTML = `
+            <div class="bloque-buscador">
+                <label class="label-buscador">BUSCAR CLIENTE (NIT O NOMBRE)</label>
+
+                <input
+                    type="text"
+                    id="buscadorCliente"
+                    placeholder="Escribe para filtrar..."
+                    onkeyup="filtrarClientes()"
+                >
+            </div>
+
+            <label class="label-select">Seleccionar Resultado</label>
+
+            <select id="cliente_nit" size="3" class="select-clientes">
+                ${opciones}
+            </select>
+
+            <input id="total" type="number" placeholder="Total $">
+
+            <select id="estado">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Entregado">Entregado</option>
+            </select>
+
+            <button class="btn-confirmar-modal" onclick="guardarPedido()">
+                <i class="fa-solid fa-cart-plus"></i> Crear Pedido
+            </button>
+        `;
+    }
+
+    else if (tipo === "editarPedido") {
+
+        titulo.innerText = "Editar Pedido #" + valor;
+
+        contenedor.innerHTML = `
+            <input id="id_pedido" value="${valor}" readonly class="input-readonly">
+
+            <input id="total" type="number" placeholder="Total $">
+
+            <select id="estado">
+                <option value="Pendiente">Pendiente</option>
+                <option value="En proceso">En proceso</option>
+                <option value="Entregado">Entregado</option>
+            </select>
+
+            <button class="btn-confirmar-modal" onclick="actualizarPedido()">
+                <i class="fa-solid fa-rotate"></i> Actualizar Pedido
+            </button>
+        `;
+    }
+
+    else if (tipo === "buscar") {
+
         titulo.innerText = "Buscar Cliente";
-        formulario.innerHTML = `
-            <input id="nitBuscar" placeholder="Ingrese NIT">
-            <button type="button" onclick="buscarCliente()">Buscar</button>
+
+        contenedor.innerHTML = `
+            <input id="nitBuscar" placeholder="Ingrese NIT del cliente">
+
+            <button class="btn-confirmar-modal" onclick="buscarCliente()">
+                <i class="fa-solid fa-magnifying-glass"></i> Buscar
+            </button>
+
+            <div id="resultadoBusqueda"></div>
         `;
+}
+}
+
+
+// Cerrar modal
+document.addEventListener("DOMContentLoaded", () => {
+
+    const modal = getModal();
+    const cerrar = document.getElementById("cerrar");
+
+    if (cerrar) {
+        cerrar.onclick = () => modal.style.display = "none";
     }
-}
 
-/* 
-   FUNCIONES AJAX
- */
+    window.onclick = (e) => {
+        if (e.target === modal) {
+            modal.style.display = "none";
+        }
+    };
 
-function guardarCliente(){
+});
 
-    let datos = new URLSearchParams();
-    datos.append("accion","agregar");
-    datos.append("nit",document.getElementById("nit").value);
-    datos.append("first_name",document.getElementById("first_name").value);
-    datos.append("last_name",document.getElementById("last_name").value);
-    datos.append("email",document.getElementById("email").value);
-    datos.append("celular",document.getElementById("celular").value);
 
-    fetch("api/clientes.php",{
-        method:"POST",
-        body:datos
-    })
-    .then(res=>res.json())
-    .then(data=>{
-        alert("Cliente agregado correctamente");
-        location.reload();
-    });
-}
+// ================== PEDIDOS ==================
 
-function actualizarCliente(){
+// ================== CLIENTES ==================
+
+function guardarCliente() {
 
     let datos = new URLSearchParams();
-    datos.append("accion","editar");
-    datos.append("nit",document.getElementById("nit").value);
-    datos.append("first_name",document.getElementById("first_name").value);
-    datos.append("last_name",document.getElementById("last_name").value);
-    datos.append("email",document.getElementById("email").value);
-    datos.append("celular",document.getElementById("celular").value);
 
-    fetch("api/clientes.php",{
-        method:"POST",
-        body:datos
-    })
-    .then(res=>res.json())
-    .then(data=>{
-        alert("Cliente actualizado correctamente");
-        location.reload();
-    });
+    datos.append("accion", "agregar");
+    datos.append("nit", document.getElementById("nit").value);
+    datos.append("first_name", document.getElementById("first_name").value);
+    datos.append("last_name", document.getElementById("last_name").value);
+    datos.append("email", document.getElementById("email").value);
+    datos.append("celular", document.getElementById("celular").value);
+
+    fetch("api/clientes.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
 }
 
-function eliminarCliente(nit){
 
-    if(!confirm("¿Eliminar cliente?")) return;
+function actualizarCliente() {
 
     let datos = new URLSearchParams();
-    datos.append("accion","eliminar");
-    datos.append("nit",nit);
 
-    fetch("api/clientes.php",{
-        method:"POST",
-        body:datos
-    })
-    .then(res=>res.json())
-    .then(data=>{
-        location.reload();
-    });
+    datos.append("accion", "editar");
+    datos.append("nit", document.getElementById("nit").value);
+    datos.append("first_name", document.getElementById("first_name").value);
+    datos.append("last_name", document.getElementById("last_name").value);
+    datos.append("email", document.getElementById("email").value);
+    datos.append("celular", document.getElementById("celular").value);
+
+    fetch("api/clientes.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
 }
 
+
+function eliminarCliente(nit) {
+
+    if (!confirm("¿Eliminar cliente " + nit + "?")) return;
+
+    let datos = new URLSearchParams();
+
+    datos.append("accion", "eliminar");
+    datos.append("nit", nit);
+
+    fetch("api/clientes.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
+}
 function buscarCliente(){
+
+    let nit = document.getElementById("nitBuscar").value;
 
     let datos = new URLSearchParams();
     datos.append("accion","buscar");
-    datos.append("nit",document.getElementById("nitBuscar").value);
+    datos.append("nit", nit);
 
     fetch("api/clientes.php",{
         method:"POST",
         body:datos
     })
-    .then(res=>res.json())
-    .then(data=>{
-        if(data){
-            alert("Cliente encontrado:\n\n" +
-                data.first_name + " " + data.last_name +
-                "\nEmail: " + data.email +
-                "\nCelular: " + data.celular
-            );
+    .then(res => res.json())
+    .then(cliente => {
+
+        let resultado = document.getElementById("resultadoBusqueda");
+
+        if(cliente){
+            resultado.innerHTML = `
+                <p><strong>NIT:</strong> ${cliente.nit}</p>
+                <p><strong>Nombre:</strong> ${cliente.first_name}</p>
+                <p><strong>Apellido:</strong> ${cliente.last_name}</p>
+                <p><strong>Email:</strong> ${cliente.email}</p>
+                <p><strong>Celular:</strong> ${cliente.celular}</p>
+            `;
         }else{
-            alert("Cliente no encontrado");
+            resultado.innerHTML = "Cliente no encontrado";
         }
+
     });
+
 }
 
 function visualizarCliente(nit){
 
     let datos = new URLSearchParams();
-    datos.append("accion","buscar");
-    datos.append("nit",nit);
 
-    fetch("api/clientes.php",{
-        method:"POST",
-        body:datos
+    datos.append("accion", "buscar");
+    datos.append("nit", nit);
+
+    fetch("api/clientes.php", {
+        method: "POST",
+        body: datos
     })
-    .then(res=>res.json())
-    .then(data=>{
+    .then(res => res.json())
+    .then(cliente => {
 
-        form.style.display = "flex";
-        titulo.innerText = "Visualizar Cliente";
+        abrirform("editar", nit);
 
-        formulario.innerHTML = `
-            <input value="${data.nit}" readonly>
-            <input value="${data.first_name}" readonly>
-            <input value="${data.last_name}" readonly>
-            <input value="${data.email}" readonly>
-            <input value="${data.celular}" readonly>
-            <button type="button" onclick="form.style.display='none'">
-                Cerrar
-            </button>
-        `;
+        document.getElementById("first_name").value = cliente.first_name;
+        document.getElementById("last_name").value = cliente.last_name;
+        document.getElementById("email").value = cliente.email;
+        document.getElementById("celular").value = cliente.celular;
+
     });
+    
+
+}
+function guardarPedido() {
+
+    let datos = new URLSearchParams();
+
+    datos.append("accion", "agregar");
+    datos.append("cliente_nit", document.getElementById("cliente_nit").value);
+    datos.append("total", document.getElementById("total").value);
+    datos.append("estado", document.getElementById("estado").value);
+
+    fetch("api/pedidos.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
+
 }
 
-/* EVENTOS BOTONES */
 
-document.getElementById("agregar").onclick = () => abrirform("agregar");
-document.getElementById("buscar").onclick = () => abrirform("buscar");
+function actualizarPedido() {
 
-document.querySelectorAll(".btn-editar").forEach(btn=>{
-    btn.onclick = function(){
-        let fila = this.closest("tr");
-        let nit = fila.children[0].innerText;
-        abrirform("editar", nit);
+    let datos = new URLSearchParams();
+
+    datos.append("accion", "editar");
+    datos.append("id", document.getElementById("id_pedido").value);
+    datos.append("total", document.getElementById("total").value);
+    datos.append("estado", document.getElementById("estado").value);
+
+    fetch("api/pedidos.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
+
+}
+
+
+function eliminarPedido(id) {
+
+    if (!confirm("¿Eliminar pedido #" + id + "?")) return;
+
+    let datos = new URLSearchParams();
+
+    datos.append("accion", "eliminar");
+    datos.append("id", id);
+
+    fetch("api/pedidos.php", {
+        method: "POST",
+        body: datos
+    }).then(() => location.reload());
+
+}
+
+
+function filtrarClientes() {
+
+    const filtro = document
+        .getElementById("buscadorCliente")
+        .value
+        .toLowerCase();
+
+    const opciones = document
+        .getElementById("cliente_nit")
+        .getElementsByTagName("option");
+
+    for (let i = 0; i < opciones.length; i++) {
+
+        const texto = opciones[i].text.toLowerCase();
+
+        opciones[i].style.display = texto.includes(filtro)
+            ? ""
+            : "none";
     }
-});
-
-document.querySelectorAll(".btn-eliminar").forEach(btn=>{
-    btn.onclick = function(){
-        let fila = this.closest("tr");
-        let nit = fila.children[0].innerText;
-        eliminarCliente(nit);
-    }
-});
-
-document.querySelectorAll(".btn-ver").forEach(btn=>{
-    btn.onclick = function(){
-        let fila = this.closest("tr");
-        let nit = fila.children[0].innerText;
-        visualizarCliente(nit);
-    }
-});
-
-cerrar.onclick = () => form.style.display = "none";
-
-window.onclick = function(e){
-    if(e.target === form){
-        form.style.display = "none";
-    }
-};
+}

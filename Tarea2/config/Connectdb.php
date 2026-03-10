@@ -1,13 +1,12 @@
 <?php    
-     $hostDB = '127.0.0.1';
-     $nameDB = 'Tarea2';
-     $userDB = 'Daniel';
-     $pwDB = '12345';
+    $hostDB = '127.0.0.1';
+    $nameDB = 'tarea2';
+    $userDB = 'Daniel';
+    $pwDB = '1234';
 
-     $hostPDO = "mysql:host=$hostDB; dbname=$nameDB";
-     $myPDO = new PDO($hostPDO, $userDB, $pwDB );
+    $hostPDO = "mysql:host=$hostDB;dbname=$nameDB;charset=utf8";
 
-     $myQuery = $myPDO->prepare('SELECT * FROM clientes;');
-     $myQuery->execute();
-     $result = $myQuery->fetchAll();
-   ?>
+    $myPDO = new PDO($hostPDO, $userDB, $pwDB);
+
+    $myPDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+?>
