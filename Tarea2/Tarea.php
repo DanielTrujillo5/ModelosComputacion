@@ -108,7 +108,7 @@ if($view == 'clientes'){
                 $stmt = $myPDO->query($sql);
                 if($stmt->rowCount() > 0){
                     while($row = $stmt->fetch(PDO::FETCH_ASSOC)){
-                        // Lógica para asignar clase de color según el estado
+
                         $estadoRaw = $row['estado'];
                         $claseEstado = 'pendiente'; // default
                         if($estadoRaw == 'En proceso') $claseEstado = 'proceso';

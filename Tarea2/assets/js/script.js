@@ -150,9 +150,8 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 
-// ================== PEDIDOS ==================
+// pedidos y cliente
 
-// ================== CLIENTES ==================
 
 function guardarCliente() {
 
